@@ -15,13 +15,25 @@ class TasksController extends Controller
      */
     public function index()
     {
-         // メッセージ一覧を取得
-        $tasks = Task::all();
-
+        $data = [];
+        if (\Auth::check()) { // 認証済みの場合
+            // 認証済みユーザを取得
+            $user = \Auth::user();
+            // ユーザの投稿の一覧を作成日時の降順で取得
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
+            
+            $data=[
+                'tasks'=>$tasks
+                ];
+        }
+        
+         else {
+             return view('welcome');
+        }
+        
+         
         // メッセージ一覧ビューでそれを表示
-        return view('tasks.index', [
-            'tasks' => $tasks,
-        ]);
+        return view('tasks.index', $data);
     }
 
     /**
@@ -52,11 +64,13 @@ class TasksController extends Controller
             'status' => 'required|max:10',   // 追加
             'content' => 'required|max:255',
         ]);
+
         
         // メッセージを作成
         $task = new Task;
         $task->status=$request->status;
         $task->content = $request->content;
+        $task->user_id=\Auth::id();
         $task->save();
 
         // トップページへリダイレクトさせる
